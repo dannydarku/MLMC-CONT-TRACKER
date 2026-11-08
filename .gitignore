@@ -1,0 +1,13 @@
+# Build output: the tester zip and the app copies inside tester-package
+# can be regenerated from mlmc-contract-tracker/
+*.zip
+tester-package/assets/
+tester-package/css/
+tester-package/js/
+tester-package/2 - OPEN THE APP.html
+
+# OS / editor files
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/

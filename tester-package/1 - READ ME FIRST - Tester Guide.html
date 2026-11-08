@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tester Guide – MLMC Contract &amp; Document Tracker</title>
+<style>
+  :root { --navy:#2f4f85; --navy-900:#1b3a5b; --magenta:#ab3a76; --orange:#e2893a; --ink:#1c2433; --muted:#5d6779; --line:#dde2ea; --bg:#f4f6f9;
+          --ok:#067647; --ok-bg:#ecfdf3; --warn:#a15c07; --warn-bg:#fffaeb; --note-bg:#eff8ff; --note:#194185; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color:var(--ink); background:var(--bg); font-size:15px; line-height:1.55; }
+  .page { max-width: 880px; margin: 0 auto; background:#fff; min-height:100vh; border-left:1px solid var(--line); border-right:1px solid var(--line); }
+  .bar { height:6px; background: linear-gradient(90deg,#9a327c,#c53c71 35%,#e2893a 70%,#e3ce54); }
+  header { padding: 28px 40px 20px; border-bottom:1px solid var(--line); display:flex; gap:24px; align-items:center; flex-wrap:wrap; }
+  header img { width: 210px; height:auto; }
+  header h1 { margin:0; font-size:24px; color:var(--navy-900); }
+  header p { margin:4px 0 0; color:var(--muted); }
+  main { padding: 8px 40px 48px; }
+  h2 { color:var(--navy-900); font-size:19px; margin:34px 0 10px; padding-bottom:6px; border-bottom:2px solid var(--line); }
+  h3 { color:var(--navy); font-size:15.5px; margin:22px 0 6px; }
+  .callout { border-radius:8px; padding:12px 16px; margin:14px 0; background:var(--note-bg); color:var(--note); border:1px solid #b2ddff; }
+  .callout.warn { background:var(--warn-bg); color:#7a2e0e; border-color:#fedf89; }
+  .callout > b:first-child { display:block; margin-bottom:2px; }
+  td.mono { background:none; padding:8px 10px; font-size:13px; }
+  ol.steps li { margin-bottom:6px; }
+  table { width:100%; border-collapse:collapse; margin:10px 0; font-size:14px; }
+  th, td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); background:#fafbfc; }
+  code, .mono { font-family: Consolas, ui-monospace, monospace; font-size:13.5px; background:#f2f4f7; padding:1px 5px; border-radius:4px; }
+  .tag { display:inline-block; font-size:12px; font-weight:600; padding:1px 8px; border-radius:999px; }
+  .tag.team { background:var(--ok-bg); color:var(--ok); }
+  .tag.lim { background:#f2f4f7; color:#475467; }
+  .scenario { border:1px solid var(--line); border-radius:8px; margin:12px 0; overflow:hidden; }
+  .scenario .head { background:#fafbfc; padding:10px 14px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .scenario .head b { color:var(--navy-900); }
+  .scenario .head span { color:var(--muted); font-size:13px; }
+  .scenario ul { list-style:none; margin:0; padding:8px 14px 12px; }
+  .scenario li { display:grid; grid-template-columns: 22px minmax(0,1fr); gap:8px; padding:5px 0; }
+  .scenario li input { margin-top:4px; width:16px; height:16px; accent-color: var(--magenta); }
+  .expect { color:var(--ok); font-size:13.5px; }
+  .expect::before { content:'Expected: '; font-weight:600; }
+  .template { background:#fafbfc; border:1px dashed #c4cbd7; border-radius:8px; padding:14px 18px; font-family: Consolas, ui-monospace, monospace; font-size:13.5px; white-space:pre-wrap; }
+  footer { padding: 16px 40px 28px; color:var(--muted); font-size:12.5px; border-top:1px solid var(--line); }
+  .print { float:right; margin-top:-4px; font: inherit; font-size:13px; padding:6px 12px; border:1px solid #c4cbd7; border-radius:6px; background:#fff; cursor:pointer; }
+  @media (max-width: 640px) { header, main, footer { padding-left:16px; padding-right:16px; } table { font-size:13px; } }
+  @media print { body { background:#fff; } .page { border:none; } .print { display:none; } .scenario { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="bar"></div>
+  <header>
+    <img src="assets/logo-full.png" alt="Makati Life Medical Center">
+    <div>
+      <h1>Tester Guide</h1>
+      <p>Contract &amp; Document Tracker · Prototype</p>
+    </div>
+  </header>
+  <main>
+    <button class="print" onclick="window.print()">Print / Save as PDF</button>
+
+    <h2>1. What you are testing</h2>
+    <p>This is an early <b>prototype</b> of a system for tracking hospital contracts and controlled documents. Every record has an owner, a status, key dates (expiry, renewal notice, review) and a full activity history. Two kinds of users exist:</p>
+    <ul>
+      <li><span class="tag team">Records Team</span> full access: create, edit, delete, approve access requests, manage users.</li>
+      <li><span class="tag lim">Limited</span> can open records they own; everything else needs approval from the Records Team before they can view or download it.</li>
+    </ul>
+    <div class="callout warn"><b>All data is sample data.</b>Do not enter real contracts, patient information or personal details. Vendors and most names are made up.</div>
+
+    <h2>2. How to open it</h2>
+    <ol class="steps">
+      <li><b>Unzip the file first.</b> Right-click the .zip → <i>Extract All…</i> → Extract. (It won't work if you open it from inside the zip.)</li>
+      <li>In the extracted folder, double-click <b>“2 - OPEN THE APP.html”</b>.</li>
+      <li>Use <b>Google Chrome</b> or <b>Microsoft Edge</b> on a computer. Nothing to install.</li>
+    </ol>
+    <div class="callout"><b>Good to know</b>
+      Everything you do is saved <b>only in your own browser</b> on your computer. Other testers have their own separate copy, so they won't see your changes, and you won't see theirs.<br>
+      To act as a different person, click <b>Sign out</b> (top right) and sign in as someone else. Changes you made carry over, so you can request access as one user and approve it as another.<br>
+      To start over at any time: sign in as a Records Team user → <b>Settings &amp; Integrations</b> → <b>Reset demo data</b>.
+    </div>
+
+    <h2>3. Test accounts</h2>
+    <p>Password for every account: <code>demo123</code>. You can also click <b>Use</b> next to an account on the sign-in page.</p>
+    <table>
+      <thead><tr><th>Name</th><th>Email (sign-in)</th><th>Department</th><th>Access</th></tr></thead>
+      <tbody>
+        <tr><td>Andrea Santos</td><td class="mono">andrea.santos@mlmc.test</td><td>Records Team</td><td><span class="tag team">Records Team</span></td></tr>
+        <tr><td>Patricia Lim</td><td class="mono">patricia.lim@mlmc.test</td><td>Records Team</td><td><span class="tag team">Records Team</span></td></tr>
+        <tr><td>Miguel Reyes</td><td class="mono">miguel.reyes@mlmc.test</td><td>Records Team</td><td><span class="tag team">Records Team</span></td></tr>
+        <tr><td>Joanna Cruz</td><td class="mono">joanna.cruz@mlmc.test</td><td>Nursing</td><td><span class="tag lim">Limited</span></td></tr>
+        <tr><td>Ramon Dizon</td><td class="mono">ramon.dizon@mlmc.test</td><td>Radiology</td><td><span class="tag lim">Limited</span></td></tr>
+        <tr><td>Liza Mendoza</td><td class="mono">liza.mendoza@mlmc.test</td><td>Billing</td><td><span class="tag lim">Limited</span></td></tr>
+        <tr><td>Carlo Navarro</td><td class="mono">carlo.navarro@mlmc.test</td><td>Laboratory</td><td><span class="tag lim">Limited</span></td></tr>
+        <tr><td>Grace Villanueva</td><td class="mono">grace.villanueva@mlmc.test</td><td>Admissions</td><td><span class="tag lim">Limited</span></td></tr>
+      </tbody>
+    </table>
+
+    <h2>4. Test scenarios</h2>
+    <p>Work through these in order. Tick each step as you go (ticks are not saved; print the page if you want a paper copy). If anything behaves differently from the green “Expected” note, report it (section 5).</p>
+
+    <div class="scenario"><div class="head"><b>A. Sign-in and dashboard</b><span>as Andrea (Records Team)</span></div><ul>
+      <li><input type="checkbox"><div>Try signing in with a wrong password, then with the correct one.<div class="expect">Wrong password shows an error; correct one opens the dashboard.</div></div></li>
+      <li><input type="checkbox"><div>Look at the summary cards and the “Needs attention” list. Click a card and a row.<div class="expect">Cards open the matching list; rows open that record. Red = needs action now, amber/blue = coming due.</div></div></li>
+      <li><input type="checkbox"><div>In “By department”, click a department.<div class="expect">Registry opens showing only that department's records.</div></div></li>
+    </ul></div>
+
+    <div class="scenario"><div class="head"><b>B. Registry: find records</b><span>as Andrea</span></div><ul>
+      <li><input type="checkbox"><div>Search for “MRI”, then for a code such as <code>MLMC-NSG</code>.<div class="expect">List narrows as you type.</div></div></li>
+      <li><input type="checkbox"><div>Combine filters: Category, Department, Status, Monitoring. Then click <b>Clear</b>.<div class="expect">Results match every filter; Clear shows all records again.</div></div></li>
+      <li><input type="checkbox"><div>Click <b>Export CSV</b> and open the file in Excel.<div class="expect">A spreadsheet of the records currently shown.</div></div></li>
+    </ul></div>
+
+    <div class="scenario"><div class="head"><b>C. Create a record</b><span>as Andrea</span></div><ul>
+      <li><input type="checkbox"><div>Click <b>+ New record</b>. Change Type, Department and Version and watch the Document code.<div class="expect">Code updates automatically, e.g. <code>MLMC-RAD-CSA-001-1.0</code>.</div></div></li>
+      <li><input type="checkbox"><div>Switch Type between a document (e.g. Policy) and a contract (e.g. Service Agreement).<div class="expect">Documents ask for a next review date; contracts ask for expiry date, notice period, counterparty and value.</div></div></li>
+      <li><input type="checkbox"><div>Try saving with the owner or key date missing, or with a code that already exists.<div class="expect">A clear message explains what is missing; nothing is saved.</div></div></li>
+      <li><input type="checkbox"><div>Create a contract that expires in about 20 days.<div class="expect">It appears in the Registry and on the dashboard flagged red (“Expires in … d”).</div></div></li>
+    </ul></div>
+
+    <div class="scenario"><div class="head"><b>D. Work with a record</b><span>as Andrea</span></div><ul>
+      <li><input type="checkbox"><div>Open any record. Click <b>View document</b>, then <b>Download</b>.<div class="expect">A cover-page preview opens; a small sample PDF downloads.</div></div></li>
+      <li><input type="checkbox"><div>Click <b>Edit</b>, change the title and owner, save. Then use <b>Change status</b>.<div class="expect">Changes show immediately and appear in the record's <b>Activity</b> tab with who/when/what.</div></div></li>
+      <li><input type="checkbox"><div>Click <b>Upload file</b> and attach a small PDF or image (under 300 KB), then download it. Also try a file over 300 KB.<div class="expect">Small file uploads and downloads back; large file shows a size message.</div></div></li>
+      <li><input type="checkbox"><div>Delete the record you created in scenario C.<div class="expect">Asks for confirmation; record disappears; the deletion is listed in <b>Activity Log</b>.</div></div></li>
+    </ul></div>
+
+    <div class="scenario"><div class="head"><b>E. Request access (limited user)</b><span>sign out → sign in as Joanna</span></div><ul>
+      <li><input type="checkbox"><div>Check the menu and dashboard.<div class="expect">Fewer menu items; dashboard shows only Joanna's records and requests.</div></div></li>
+      <li><input type="checkbox"><div>Open one of Joanna's own records (e.g. Patient Fall Prevention Protocol).<div class="expect">Opens without approval because she is the owner.</div></div></li>
+      <li><input type="checkbox"><div>In Registry, open a record marked <b>Locked</b> (e.g. MRI Scanner contract). Request <b>View only</b> with a reason.<div class="expect">Only basic details are shown; after sending, it says “Request pending”.</div></div></li>
+      <li><input type="checkbox"><div>Request access to a second locked record choosing <b>View &amp; download</b>.<div class="expect">Both requests appear under <b>My Requests → Pending</b>.</div></div></li>
+    </ul></div>
+
+    <div class="scenario"><div class="head"><b>F. Approve, reject, revoke</b><span>sign out → sign in as Andrea</span></div><ul>
+      <li><input type="checkbox"><div>Go to <b>Access Requests</b>. Approve one of Joanna's requests and reject the other (a reason is required).<div class="expect">Approved one moves to Active grants with an expiry date; rejected one moves to History.</div></div></li>
+      <li><input type="checkbox"><div>Sign in as Joanna again and open the approved record.<div class="expect">Opens with a “Temporary access” note. Download is only available if download was approved. The rejected record shows the rejection reason.</div></div></li>
+      <li><input type="checkbox"><div>As Andrea, <b>Revoke</b> Joanna's active grant, then check again as Joanna.<div class="expect">The record is locked again.</div></div></li>
+    </ul></div>
+
+    <div class="scenario"><div class="head"><b>G. Users and roles</b><span>as Andrea</span></div><ul>
+      <li><input type="checkbox"><div><b>Settings &amp; Integrations → Users &amp; roles</b>: click <b>Grant full access</b> for Ramon.<div class="expect">Asks for confirmation; Ramon becomes Records Team; logged in Activity Log.</div></div></li>
+      <li><input type="checkbox"><div>Sign in as Ramon and check the menu. Then (as Andrea) <b>Remove full access</b> from Ramon.<div class="expect">Ramon gets the full menu, then goes back to limited.</div></div></li>
+      <li><input type="checkbox"><div>Check you cannot change your own access, and cannot remove the last Records Team member.<div class="expect">Your row says “You”; the last full-access person can't be removed.</div></div></li>
+    </ul></div>
+
+    <div class="scenario"><div class="head"><b>H. Settings and monitoring rules</b><span>as Andrea</span></div><ul>
+      <li><input type="checkbox"><div>Change “Flag expiries / reviews” from <code>90, 60, 30</code> to <code>120, 60, 14</code> and save. Revisit the dashboard.<div class="expect">Flag colours and counts change to match the new thresholds.</div></div></li>
+      <li><input type="checkbox"><div>Fill in the OneDrive fields and click <b>Connect OneDrive</b>.<div class="expect">A message explains it is not connected in this prototype (expected for now).</div></div></li>
+    </ul></div>
+
+    <div class="scenario"><div class="head"><b>I. Free testing: try to break it</b><span>any user</span></div><ul>
+      <li><input type="checkbox"><div>Very long titles, special characters (<code>&lt; &gt; &amp; " '</code>), emojis, past and far-future dates.</div></li>
+      <li><input type="checkbox"><div>Click quickly / double-click buttons, use the browser Back button, refresh in the middle of a task.</div></li>
+      <li><input type="checkbox"><div>Make the browser window narrow (or use a phone-sized window) and check pages still read well.</div></li>
+      <li><input type="checkbox"><div>Anything confusing: wording, layout, missing information you'd expect to see.</div></li>
+    </ul></div>
+
+    <h2>5. Reporting what you find</h2>
+    <p>Send your notes (with screenshots if possible) back to the person who gave you this file. Copy this template for each issue:</p>
+    <div class="template">Tester name:
+Browser (Chrome / Edge):
+Scenario + step (e.g. F-2):
+What I did:
+What I expected:
+What actually happened:
+Screenshot attached? (Y/N)
+How serious? (Blocker / Annoying / Minor / Suggestion)</div>
+
+    <h2>6. Known limits of this prototype</h2>
+    <p>Please don't report these as bugs. They are planned for a later version:</p>
+    <ul>
+      <li>No real accounts: sign-in uses the demo accounts above (later: hospital Microsoft 365 sign-in).</li>
+      <li>Data is not shared between testers or computers, and clearing your browser data erases it.</li>
+      <li>No email notifications.</li>
+      <li>OneDrive is not connected; files are small sample PDFs or uploads up to 300 KB.</li>
+    </ul>
+  </main>
+  <footer>Makati Life Medical Center · Contract &amp; Document Tracker prototype · For internal testing only</footer>
+</div>
+</body>
+</html>
