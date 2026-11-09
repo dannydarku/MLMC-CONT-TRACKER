@@ -82,13 +82,43 @@
           </div>
         </section>
       </div>`;
-    document.getElementById('login-form').onsubmit = (e) => {
+    document.getElementById('login-form').onsubmit = async (e) => {
       e.preventDefault();
       const f = new FormData(e.target);
-      const u = S.login(f.get('email'), f.get('password'));
-      if (!u) return renderLogin('Incorrect email or password.');
-      S.log(null, u.id, 'Signed in', `${u.name} signed in`); S.save();
-      location.hash = '#/dashboard'; render();
+      const res = await S.checkLogin(f.get('email'), f.get('password'));
+      if (res.status === 'needs-password') return renderCreatePassword(res.user);
+      if (res.status !== 'ok') return renderLogin('Incorrect email or password.');
+      finishSignIn(res.user, 'Signed in');
+    };
+  }
+
+  function finishSignIn(u, action) {
+    S.log(null, u.id, action, `${u.name} ${action === 'Signed in' ? 'signed in' : 'created a password and signed in'}`); S.save();
+    location.hash = '#/dashboard'; render();
+  }
+
+  // First sign-in for an allowed email: the tester chooses their own password.
+  function renderCreatePassword(u, err) {
+    renderLogin();
+    const card = document.querySelector('.login-card');
+    card.innerHTML = `
+      <h2>Create your password</h2>
+      <div class="muted">First sign-in for <b class="mono">${esc(u.email)}</b>. Choose a password you'll use from now on in this browser.</div>
+      <form id="pw-form" autocomplete="off">
+        <label class="field">New password<input type="password" name="pw1" required minlength="8" autocomplete="new-password"><span class="hint">At least 8 characters.</span></label>
+        <label class="field">Confirm password<input type="password" name="pw2" required minlength="8" autocomplete="new-password"></label>
+        ${err ? `<div class="error-text">${esc(err)}</div>` : ''}
+        <button class="btn btn-primary" type="submit">Create password and sign in</button>
+        <button class="btn" type="button" data-action="back-to-login">Back</button>
+      </form>`;
+    card.querySelector('[name=pw1]').focus();
+    document.getElementById('pw-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const f = new FormData(e.target);
+      if (f.get('pw1') !== f.get('pw2')) return renderCreatePassword(u, 'The two passwords do not match.');
+      try { await S.setPassword(u, f.get('pw1')); } catch (err2) { return renderCreatePassword(u, err2.message); }
+      S.startSession(u);
+      finishSignIn(u, 'Password created');
     };
   }
 
@@ -110,7 +140,7 @@
           <div class="product">Contract &amp; Document Tracker<small>Centralized monitoring and accountability</small></div>
           <div class="spacer"></div>
           <div class="userchip"><div class="avatar">${esc(initials(u.name))}</div>
-            <div class="meta"><b>${esc(u.name)}</b><span class="small muted">${M.ROLES[u.role].label} · ${esc(u.dept)}</span></div>
+            <div class="meta"><b>${esc(u.name)}</b><span class="small muted">${M.ROLES[u.role].label}${u.dept ? ' · ' + esc(u.dept) : ''}</span></div>
             <button class="btn btn-sm" data-action="logout">Sign out</button></div>
         </header>
         <div class="brandbar"></div>
@@ -145,7 +175,7 @@
     }).filter((x) => x.total);
 
     return `
-      <div class="page-head"><div><h1>${greeting}, ${esc(u.name.split(' ')[0])}</h1><p>${todayStr} · ${tracked.length} records under active monitoring</p></div>
+      <div class="page-head"><div><h1>${greeting}, ${esc(u.name)}</h1><p>${todayStr} · ${tracked.length} records under active monitoring</p></div>
         <div class="actions"><a class="btn btn-primary" href="#/new">+ New record</a></div></div>
       <div class="kpis">
         <a class="kpi crit" href="#/registry" data-filter-attention="action"><div class="label">Needs action now</div><div class="value">${crit.length}</div><div class="sub">Expired, overdue or notice missed</div></a>
@@ -169,7 +199,7 @@
     const now = new Date().toISOString();
     const grants = myReqs.filter((q) => q.status === 'Approved' && q.expiresAt > now);
     return `
-      <div class="page-head"><div><h1>${greeting}, ${esc(u.name.split(' ')[0])}</h1><p>${todayStr} · ${esc(S.lookups.deptName(u.dept))}</p></div>
+      <div class="page-head"><div><h1>${greeting}, ${esc(u.name)}</h1><p>${todayStr}${u.dept ? ' · ' + esc(S.lookups.deptName(u.dept)) : ''}</p></div>
         <div class="actions"><a class="btn btn-primary" href="#/registry">Browse registry</a></div></div>
       <div class="callout" style="margin-bottom:18px"><b>You have limited access.</b>You can open records you own. To view or download any other contract or document, send a request; the Records Team approves it and access lasts for a set number of days.</div>
       <div class="kpis">
@@ -481,7 +511,7 @@
     return `<div class="req-card"><div>
         <div><span class="badge ${st}">${esc(stLabel)}</span> <b>${q.type === 'download' ? 'View &amp; download' : 'View only'}</b> · ${q.durationDays} day${q.durationDays > 1 ? 's' : ''}</div>
         ${showRecord ? `<div style="margin-top:6px">${r ? `<a href="#/record/${r.id}"><b>${esc(r.title)}</b></a> <span class="mono muted">${esc(r.code)}</span> ${deptChip(r.dept)}` : '<span class="muted">Record deleted</span>'}</div>` : ''}
-        ${team ? `<div class="small" style="margin-top:4px">Requested by <b>${esc(req ? req.name : '?')}</b> (${esc(req ? req.title + ', ' + S.lookups.deptName(req.dept) : '')}) on ${M.fmtTs(q.ts)}</div>` : `<div class="small muted" style="margin-top:4px">Requested ${M.fmtTs(q.ts)}</div>`}
+        ${team ? `<div class="small" style="margin-top:4px">Requested by <b>${esc(req ? req.name : '?')}</b> (${esc(req ? [req.title, req.dept ? S.lookups.deptName(req.dept) : ''].filter(Boolean).join(', ') : '')}) on ${M.fmtTs(q.ts)}</div>` : `<div class="small muted" style="margin-top:4px">Requested ${M.fmtTs(q.ts)}</div>`}
         <div class="reason">${esc(q.reason)}</div>
         ${q.decidedBy ? `<div class="small muted" style="margin-top:6px">${q.status === 'Rejected' ? 'Rejected' : 'Decided'} by ${esc(S.userName(q.decidedBy))} on ${M.fmtTs(q.decidedTs)}${q.note ? ` · “${esc(q.note)}”` : ''}</div>` : ''}
       </div>
@@ -561,7 +591,7 @@
               : x.role === 'team'
                 ? `<button class="btn btn-sm btn-danger" data-action="set-role" data-id="${x.id}" data-role="limited" ${lastTeam ? 'disabled title="At least one person must keep full access"' : ''}>Remove full access</button>`
                 : `<button class="btn btn-sm btn-ok" data-action="set-role" data-id="${x.id}" data-role="team">Grant full access</button>`;
-            return `<tr><td class="title-cell"><b>${esc(x.name)}</b><span>${esc(x.title)}</span></td><td>${deptChip(x.dept)}</td><td class="mono email">${esc(x.email)}</td><td><div class="access-cell">${x.role === 'team' ? '<span class="badge ok">Records Team</span>' : '<span class="badge none">Limited</span>'}${action}</div></td></tr>`;
+            return `<tr><td class="title-cell"><b>${esc(x.name)}</b><span>${esc(x.title || '')}</span><button class="btn btn-sm" style="margin-top:6px" data-action="edit-user" data-id="${x.id}">Edit name</button></td><td>${x.dept ? deptChip(x.dept) : '<span class="muted">—</span>'}</td><td class="mono email">${esc(x.email)}</td><td><div class="access-cell">${x.role === 'team' ? '<span class="badge ok">Records Team</span>' : '<span class="badge none">Limited</span>'}${action}</div></td></tr>`;
           }).join('')}
         </tbody></table></div></div>
         <div class="card"><div class="card-head"><h2>Demo data</h2></div><div class="card-body" style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap">
@@ -658,7 +688,22 @@
     const act = el.dataset.action; const id = el.dataset.id;
     switch (act) {
       case 'close-modal': closeModal(); break;
-      case 'demo-fill': { const f = document.getElementById('login-form'); f.email.value = el.dataset.email; f.password.value = M.DEMO_PASSWORD; f.querySelector('button[type=submit]').focus(); break; }
+      case 'back-to-login': renderLogin(); break;
+      case 'edit-user': {
+        const x = S.user(id);
+        openModal(modalShell('Edit person', `<div class="form-grid" style="grid-template-columns:1fr">
+            <p class="mono small muted" style="margin:0">${esc(x.email)}</p>
+            <label class="field"><span class="req">Name</span><input type="text" id="eu-name" value="${esc(x.name)}"></label>
+            <label class="field">Position<input type="text" id="eu-title" value="${esc(x.title || '')}"></label>
+            <label class="field">Department<select id="eu-dept">${deptOptions(x.dept, 'Not set')}</select></label>
+            <div id="eu-err" class="error-text"></div></div>`,
+          `<button class="btn" data-action="close-modal">Cancel</button><button class="btn btn-primary" id="eu-ok">Save</button>`));
+        document.getElementById('eu-ok').onclick = () => {
+          try { S.updateUser(u, id, { name: document.getElementById('eu-name').value, title: document.getElementById('eu-title').value, dept: document.getElementById('eu-dept').value }); closeModal(); toast('Saved.'); render(); }
+          catch (err) { document.getElementById('eu-err').textContent = err.message; }
+        };
+        break;
+      }
       case 'logout': S.log(null, u.id, 'Signed out', `${u.name} signed out`); S.save(); S.logout(); location.hash = '#/login'; render(); break;
       case 'tab': ui.tab = el.dataset.tab; render(); break;
       case 'req-tab': ui.reqTab = el.dataset.tab; render(); break;

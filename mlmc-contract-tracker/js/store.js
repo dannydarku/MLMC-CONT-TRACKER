@@ -6,7 +6,9 @@
 window.MLMC = window.MLMC || {};
 
 (function (M) {
-  const KEY = 'mlmc-tracker-v1';
+  // v2: two tester accounts only, no sample names. Changing the key makes every
+  // browser start fresh instead of keeping the old 8-person demo data.
+  const KEY = 'mlmc-tracker-v2';
   const DAY = 86400000;
 
   M.today = () => { const t = new Date(); t.setHours(0, 0, 0, 0); return t; };
@@ -33,11 +35,34 @@ window.MLMC = window.MLMC || {};
       let id = null; try { id = sessionStorage.getItem(KEY + '-session'); } catch (e) {}
       return this.state.users.find((u) => u.id === id) || null;
     },
-    login(email, password) {
-      const u = this.state.users.find((x) => x.email.toLowerCase() === String(email).trim().toLowerCase());
-      if (!u || password !== M.DEMO_PASSWORD) return null;
-      try { sessionStorage.setItem(KEY + '-session', u.id); } catch (e) {}
-      return u;
+    /* Passwords are never in the code. Each allowed email creates its own
+       password on first sign-in; only a salted SHA-256 hash is kept, in this
+       browser, under a separate key so "Reset demo data" doesn't erase it. */
+    findUser(email) { return this.state.users.find((x) => x.email.toLowerCase() === String(email || '').trim().toLowerCase()) || null; },
+    pwStore() { try { return JSON.parse(localStorage.getItem(KEY + '-passwords') || '{}'); } catch (e) { return {}; } },
+    hasPassword(u) { return !!this.pwStore()[u.email.toLowerCase()]; },
+    async hash(u, password) {
+      const text = 'mlmc-tracker|' + u.email.toLowerCase() + '|' + password;
+      if (window.crypto && crypto.subtle) {
+        const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+        return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+      }
+      let h = 5381; for (let i = 0; i < text.length; i++) h = ((h << 5) + h + text.charCodeAt(i)) >>> 0; // fallback
+      return 'djb2-' + h.toString(16);
+    },
+    async setPassword(u, password) {
+      if (String(password).length < 8) throw new Error('Use at least 8 characters.');
+      const all = this.pwStore(); all[u.email.toLowerCase()] = await this.hash(u, password);
+      try { localStorage.setItem(KEY + '-passwords', JSON.stringify(all)); } catch (e) { throw new Error('Could not save the password in this browser.'); }
+    },
+    startSession(u) { try { sessionStorage.setItem(KEY + '-session', u.id); } catch (e) {} return u; },
+    // Returns { status: 'ok' | 'invalid' | 'needs-password', user }
+    async checkLogin(email, password) {
+      const u = this.findUser(email);
+      if (!u) return { status: 'invalid' };
+      if (!this.hasPassword(u)) return { status: 'needs-password', user: u };
+      const ok = (await this.hash(u, password)) === this.pwStore()[u.email.toLowerCase()];
+      return ok ? { status: 'ok', user: this.startSession(u) } : { status: 'invalid' };
     },
     logout() { try { sessionStorage.removeItem(KEY + '-session'); } catch (e) {} },
 
@@ -139,6 +164,19 @@ window.MLMC = window.MLMC || {};
     },
 
     /* ---------- users & roles ---------- */
+    updateUser(u, userId, data) {
+      if (!this.isTeam(u)) throw new Error('Only the Records Team can edit people.');
+      const target = this.user(userId);
+      const name = String(data.name || '').trim();
+      if (!name) throw new Error('Name is required.');
+      const changes = [];
+      if (target.name !== name) changes.push(`name: ${target.name} → ${name}`);
+      if ((target.title || '') !== (data.title || '').trim()) changes.push(`position: ${target.title || '—'} → ${(data.title || '').trim() || '—'}`);
+      if ((target.dept || '') !== (data.dept || '')) changes.push(`department: ${target.dept || '—'} → ${data.dept || '—'}`);
+      Object.assign(target, { name, title: (data.title || '').trim(), dept: data.dept || '' });
+      if (changes.length) this.log(null, u.id, 'Person updated', changes.join('; '));
+      this.save();
+    },
     // Grant or remove full (Records Team) access. Guards: you can't change
     // your own role, and at least one Records Team member must remain.
     setRole(u, userId, role) {

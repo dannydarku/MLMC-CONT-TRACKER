@@ -10,12 +10,9 @@ From the `CLAUDE CODE` folder:
 python -m http.server 8765 --directory mlmc-contract-tracker
 ```
 
-Open http://localhost:8765. Demo password for every account: `demo123`.
+Open http://localhost:8765.
 
-| Account | Role |
-|---|---|
-| andrea.santos@mlmc.test, miguel.reyes@mlmc.test, patricia.lim@mlmc.test | Records Team (full access) |
-| joanna.cruz@ (Nursing), ramon.dizon@ (Radiology), liza.mendoza@ (Billing), carlo.navarro@ (Laboratory), grace.villanueva@ (Admissions) | Limited (approval needed) |
+Only two emails can sign in: `full.access@mlmc.test` (Records Team, full access) and `limited.access@mlmc.test` (limited access). They are listed in `js/seed.js`. No passwords are stored in the code: the first time each email signs in, the app asks the tester to create a password, which is kept (hashed) in that browser only. Names are placeholders. A full-access user can change names, positions and departments in Settings → Users & roles.
 
 ## What is mocked, and how each piece goes to production
 
