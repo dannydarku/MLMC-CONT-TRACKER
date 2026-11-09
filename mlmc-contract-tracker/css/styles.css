@@ -347,3 +347,38 @@ main.view a:not(.btn):not(.kpi):hover { color: var(--magenta); text-decoration-c
   .paper { padding: 16px; }
   .paper .big { font-size: 24px; }
 }
+
+/* ---------- phones: every table row becomes a small stacked card ----------
+   Line 1: title block (title, code, owner); then the other cells sit side by
+   side and wrap. Column headings are hidden because each card is labelled. */
+@media (max-width: 640px) {
+  .tbl, .tbl tbody { display: block; width: 100%; }
+  .tbl thead { display: none; }
+  .tbl tr { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .tbl tbody tr:last-child { border-bottom: none; }
+  .tbl td { display: block; padding: 0; border: none; min-width: 0; max-width: 100%; }
+  .tbl td:empty { display: none; }
+  .tbl .title-cell, .tbl.compact .title-cell { flex: 1 1 100%; min-width: 0; }
+  .tbl td.nowrap { white-space: nowrap; }
+  .tbl td > .small.muted { display: inline; margin-left: 4px; }  /* "10-27-2026 Review" on one line */
+  .tbl .badge, .tbl.compact .badge { white-space: nowrap; font-size: 11.5px; }
+  .tbl.compact td:last-child { padding-right: 0; }
+  .tbl td[style*="text-align:right"] { text-align: left !important; }
+  .tbl tr.clickable:hover td:first-child { box-shadow: none; }
+  .tbl tr.clickable:hover { box-shadow: inset 3px 0 0 var(--magenta); }
+  .tbl tr td.empty { flex: 1 1 100%; }
+  .access-cell { justify-content: flex-start; }
+  .users-tbl .email { flex: 1 1 100%; }
+  .card-head { padding: 14px 16px; }
+  .filters { grid-template-columns: minmax(0, 1fr) !important; }
+  .record-bar .actions .end-group { margin-left: 0; }
+}
+
+/* Touch screens: no hover, so don't leave tapped rows/cards highlighted. */
+@media (hover: none) {
+  .tbl tr.clickable:hover td, .tbl tr.clickable:hover { background: none; box-shadow: none; }
+  .tbl tr.clickable:hover .title-cell b { color: var(--ink); }
+  .kpi:hover { box-shadow: none; border-right-color: var(--line); border-bottom-color: var(--line); border-left-color: var(--line); }
+  .kpi:hover .label { color: var(--muted); text-decoration-color: transparent; }
+  .req-card:hover { background: none; }
+}
